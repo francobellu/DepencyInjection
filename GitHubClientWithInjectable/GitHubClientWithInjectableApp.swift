@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct GitHubClientWithInjectableApp: App {
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+//                .injectedValue(\.gitHub, value: .mock())
         }
     }
 }
