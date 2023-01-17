@@ -20,6 +20,11 @@ struct GitHub {
         var pushedAt: Date?
     }
 
+    // if GitHub is declared as class
+//    required init(fetchReposA: @escaping () async throws -> [GitHub.Repo] = {try await dataTask("orgs/pointfreeco/repos")}) {
+//        self.fetchReposA = fetchReposA
+//    }
+
     var fetchReposA: () async throws -> [GitHub.Repo] = {
         try await dataTask("orgs/pointfreeco/repos")
     }
@@ -112,8 +117,6 @@ private func track(_ event: Analytics.Event) {
 struct Environment {
   var analytics = Analytics()
   var date: () -> Date = Date.init
-//  var gitHub = GitHub()
-//  var networkProvider = NetworkProvider()
 }
 
 import SwiftUI
@@ -122,9 +125,11 @@ struct ContentView: View {
     var body: some View {
         VStack {
             ReposView()
-                .injectedValue(\.gitHub, value: .error())
+                .environment(\.gitHub, GitHub.error())
+//                .injectedValue(\.gitHub, value: .error())
             ReposView()
-                .injectedValue(\.gitHub, value: .mock())
+//                .environment(\.gitHub, GitHub.error())
+                .environment(\.gitHub, GitHub.mock())
         }
     }
 }
@@ -148,13 +153,13 @@ enum NavState {
 }
 
 struct ReposView: View {
-    @Injected(\.gitHub) var gitHub: GitHub
+    @SwiftUI.Environment(\.gitHub) var gitHub
     @State var repos: [GitHub.Repo] = []
     @State private var navState: NavState = .repoList
 
-    init(gitHub: GitHub = InjectedValues[\.gitHub] ) {
-        self.gitHub = gitHub
-    }
+//    init(gitHub: GitHub = InjectedValues[\.gitHub] ) {
+//        self.gitHub = gitHub
+//    }
 
     var body: some View {
         NavigationView{
@@ -263,70 +268,89 @@ var Current = Environment()
 // repo uses Current dependencies directly
 //let reposViewController = ReposViewControllerUsingCurrent()
 
-public protocol InjectionKey {
 
-    /// The associated type representing the type of the dependency injection key's value.
-    associatedtype Value
-
-    /// The default value for the dependency injection key.
-    static var currentValue: Self.Value { get set }
-}
-
-private struct GitHubKey: InjectionKey {
-    static var currentValue: GitHub = GitHub()
-}
-
-extension InjectedValues {
-    var gitHub: GitHub {
-        get { Self[GitHubKey.self] }
-        set { Self[GitHubKey.self] = newValue }
-    }
-}
-
-/// Provides access to dependencies injected ( Using @Injected). Dependencies are created as global mutable state.
-struct InjectedValues {
-
-    /// This is only used as an accessor to the computed properties within extensions of `InjectedValues`.
-    private static var current = InjectedValues()
-
-    /// A static subscript for updating the `currentValue` of `InjectionKey` instances.
-    static subscript<K>(key: K.Type) -> K.Value where K : InjectionKey {
-        get { key.currentValue }
-        set { key.currentValue = newValue }
-    }
-
-    /// A static subscript accessor for updating and references dependencies directly.
-    static subscript<T>(_ keyPath: WritableKeyPath<InjectedValues, T>) -> T {
-        get { current[keyPath: keyPath] }
-        set { current[keyPath: keyPath] = newValue }
-    }
-}
-
-@propertyWrapper
-struct Injected<T> {
-    private let keyPath: WritableKeyPath<InjectedValues, T>
-    var wrappedValue: T {
-        get { InjectedValues[keyPath] }
-        set { InjectedValues[keyPath] = newValue }
-    }
-
-    init(_ keyPath: WritableKeyPath<InjectedValues, T>) {
-        self.keyPath = keyPath
-    }
-}
+//public protocol InjectionKey {
+//
+//    /// The associated type representing the type of the dependency injection key's value.
+//    associatedtype Value
+//
+//    /// The default value for the dependency injection key.
+//    static var currentValue: Self.Value { get set }
+//}
+//
+//private struct GitHubKey: InjectionKey {
+//    static var currentValue: GitHub = GitHub()
+//}
+//
+//extension InjectedValues {
+//    var gitHub: GitHub {
+//        get { Self[GitHubKey.self] }
+//        set { Self[GitHubKey.self] = newValue }
+//    }
+//}
+//
+///// Provides access to dependencies injected ( Using @Injected). Dependencies are created as global mutable state.
+//struct InjectedValues {
+//
+//    /// This is only used as an accessor to the computed properties within extensions of `InjectedValues`.
+//    private static var current = InjectedValues()
+//
+//    /// A static subscript for updating the `currentValue` of `InjectionKey` instances.
+//    static subscript<K>(key: K.Type) -> K.Value where K : InjectionKey {
+//        get { key.currentValue }
+//        set { key.currentValue = newValue }
+//    }
+//
+//    /// A static subscript accessor for updating and references dependencies directly.
+//    static subscript<T>(_ keyPath: WritableKeyPath<InjectedValues, T>) -> T {
+//        get { current[keyPath: keyPath] }
+//        set { current[keyPath: keyPath] = newValue }
+//    }
+//}
+//
+//@propertyWrapper
+//struct Injected<T> {
+//    private let keyPath: WritableKeyPath<InjectedValues, T>
+//    var wrappedValue: T {
+//        get { InjectedValues[keyPath] }
+//        set { InjectedValues[keyPath] = newValue }
+//    }
+//
+//    init(_ keyPath: WritableKeyPath<InjectedValues, T>) {
+//        self.keyPath = keyPath
+//    }
+//}
 
 
 struct ContentView_Previews: PreviewProvider {
 
     static var previews: some View {
 //        InjectedValues[\.gitHub] = .mock()
-        return ContentView().injectedValue(\.gitHub, value: .error())
+        return ContentView()
+//            .environment(\.gitHub, .error()) //.injectedValue(\.gitHub, value: .error())
     }
 }
 
-extension View {
-    func injectedValue<V>(_ keyPath: WritableKeyPath<InjectedValues, V>, value: V) -> some View{
-        InjectedValues[keyPath] = value
-        return self
-    }
+//extension View {
+//    func injectedValue<V>(_ keyPath: WritableKeyPath<InjectedValues, V>, value: V) -> some View{
+//        InjectedValues[keyPath] = value
+//        return self
+//    }
+//}
+
+private struct GitHubKey: EnvironmentKey {
+  static let defaultValue = GitHub()
 }
+
+extension EnvironmentValues {
+  var gitHub: GitHub  {
+    get { self[GitHubKey.self] }
+    set { self[GitHubKey.self] = newValue }
+  }
+}
+
+//extension View {
+//    func setEnvironmentDependency(_ gitHub: GitHub) -> some View {
+//      environment(\.gitHub, gitHub)
+//  }
+//}
